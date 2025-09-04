@@ -72,7 +72,7 @@ Open config.php and carefully adjust the parameters as needed for your specific 
 
 Change the Direwolf startup command to request Direwolf creating both packet logfiles and a console logfile, for example:
 
-	/usr/bin/direwolf -c /etc/direwolf.conf -l /var/log/direwolf -daknpwtoihfxd - > /var/log/direwolf/console.log
+	/usr/bin/direwolf -c /etc/direwolf.conf -l /var/log/direwolf -daknpwtoihfxd > /var/log/direwolf/console.log
 
 ## Instructions for installation and configuration of Windows
 
@@ -92,7 +92,7 @@ Open config.php and carefully adjust the parameters as needed for your specific 
 
 Change the Direwolf startup command to request Direwolf creating both packet logfiles and a console logfile, for example:
 
-	direwolf.exe -c "C:\direwolf\direwolf.conf" -l "C:\direwolf\logs" -daknpwtoihfx - > "C:\direwolf\logs\console.log"
+	direwolf.exe -c "C:\direwolf\direwolf.conf" -l "C:\direwolf\logs" -daknpwtoihfx > "C:\direwolf\logs\console.log"
 
 Direwolf for Windows might write console output in a 4kB output buffer instead of writing it directly to the console logfile. If such a buffer is being used, information in the Web Console Viewer will only be updated after Direwolf flushes that buffer.
 
