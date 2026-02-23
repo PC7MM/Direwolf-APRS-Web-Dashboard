@@ -16,6 +16,7 @@
 <a href="chgif.php">Change Radio Interface</a> | 
 <a href="frames.php">View Specified Station</a> | 
 <a href="traffic.php">Traffic Monitor</a> | 
+<a href="users.php">Users Monitor</a> | 
 <a href="igate.php">iGate Monitor</a> | 
 <a href="aprsis.php">APRS-IS Server</a> | 
 <a href="viewer.php">Console Viewer</a> | 

@@ -18,8 +18,8 @@ This dashboard is made by Michael PC7MM and Richard PD3RFR and finds it roots in
 - Show IP addresses of viewers of the Direwolf APRS Web Dashboard
 - Show raw packet information for selected specific stations
 - Show actual traffic on one or all Direwolf radio interfaces chronologically
-- Show actual status of iGates that are monitored, obtained from aprs.fi
-- Show map of iGates that are monitored, obtained from aprsdirect.de
+- Show actual status of APRS users and iGates that are monitored, obtained from aprs.fi
+- Show map of APRS users and iGates that are monitored, obtained from aprsdirect.de
 - Show information about the APRS-IS server that is currently used by Direwolf
 - Show output of the Direwolf console including automatic browser scrolldown 
 - Show a conceptual diagram of the APRS infrastructure
@@ -130,14 +130,17 @@ View Specified Station
 Traffic Monitor
 ![screen6](./screenshots/05.%20Traffic%20Monitor.jpg)
 
+Users Monitor
+![screen7](./screenshots/10.%20Users%20Monitor.jpg)
+
 IGate Monitor
-![screen7](./screenshots/06.%20iGate%20Monitor.jpg)
+![screen8](./screenshots/06.%20iGate%20Monitor.jpg)
 
 APRS-IS Server
-![screen8](./screenshots/07.%20APRS-IS%20Server.jpg)
+![screen9](./screenshots/07.%20APRS-IS%20Server.jpg)
 
 Console Viewer
-![screen9](./screenshots/08.%20Console%20Viewer.jpg)
+![screen10](./screenshots/08.%20Console%20Viewer.jpg)
 
 About
-![screen10](./screenshots/09.%20About.jpg)
+![screen11](./screenshots/09.%20About.jpg)

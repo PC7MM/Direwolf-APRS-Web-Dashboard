@@ -82,6 +82,12 @@ $stationsquery = "PE4KH-10,PI1DRV,PA1JRN-10,PD3RFR-10,PD0CL-10,PA1RBZ,PI1UTR-13,
 // for igate.php: SysOps for observed stations, one sysop per station
 $sysops = "PE4KH,N0CALL,PA1JRN,PD3RFR,PD0CL,PA1RBZ,PI1UTR,PD2BAS";
 
+// for users.php: Users to observe, declare with callsign and SSID if applicable
+$usersquery = "PD3RFR-9,PD0GJK-9,PD1MB-9,PD0CL-7,PA3WZA-9";
+
+// for users.php: SysOps for observed stations, one sysop per station
+$users = "PD3RFR,PD0GJK,PD1MB,PD0CL,PA3WZA";
+
 // for igate.php: API key from aprs.fi for retrieving last heard beacon information
 $apikey = "xxxxxxxxxxxxxxxxxxxxxxxx";
 
