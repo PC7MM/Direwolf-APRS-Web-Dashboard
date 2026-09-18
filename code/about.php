@@ -17,6 +17,8 @@ include('menu.php');
 and <a href="https://github.com/IZ7BOJ/direwolf_webstat" target="_blank">Direwolf Simple Webstat</a> in 2021.<BR><BR>
 <a href="https://www.qrz.com/db/pc7mm" target="_blank">PC7MM</a> and <a href="https://www.qrz.com/db/pd3rfr" target="_blank">PD3RFR</a>, 
 who extended Alfredo's code in 2025, resulting in this <a href="https://github.com/PC7MM/Direwolf-APRS-Web-Dashboard" target="_blank">Direwolf APRS Web Dashboard</a>.
+<BR><BR>
+<a href="https://www.qrz.com/db/M0LZN" target="_blank">M0LZN</a>, who reported about several html/script injection vulnerabilities and some other smaller bugs.
 <BR><BR>See this <a href="https://www.youtube.com/watch?v=7bMf7rWCfnE" target="_blank">introduction video</a> for more information.
 </center>
 </div>
