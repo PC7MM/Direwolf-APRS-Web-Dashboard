@@ -90,7 +90,7 @@ function stationparse($frame) { //function for parsing station information
 		$frame=str_getcsv($frame,",",escape: "\\");
 		$utime = $frame[1];
 		if($utime > $time) { //if frame was received in time range
-			$stationcall = strtoupper($frame[8]);
+			$stationcall = htmlspecialchars(strip_tags(strtoupper($frame[8])));
 			if(array_key_exists($stationcall, $receivedstations)) { //if this callsign is already on stations list
 				$receivedstations[$stationcall][0]++; //increment the number of frames from this station
 			} else { //if this callsign is not on the list

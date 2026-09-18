@@ -59,7 +59,9 @@ if(isset($_GET['ajax'])) {
 	                        elseif (in_array($c, $movingstations)) $markerclass="markermoving";
 	                        else $markerclass="marker";
 				echo("<script>");
-				echo("const overlayElement".$counter." = Object.assign(document.createElement('div'), { className: '".$markerclass."', innerHTML: '<BR><BR>".$markerlink."' });");
+				echo("const overlayElement".$counter." = document.createElement('div');");
+				echo("overlayElement".$counter.".className = ".json_encode($markerclass).";");
+				echo("overlayElement".$counter.".innerHTML = ".json_encode('<BR><BR>'.$markerlink).";");
 				echo("map.addOverlay(new ol.Overlay({ position: ol.proj.fromLonLat([".$nm[6].", ".$nm[5]."]), element: overlayElement".$counter." }));");
 				echo("</script>");
 			}

@@ -37,15 +37,15 @@ if (isset($_GET['ajax'])) {
 function showrow($row) {
 	global $displayallchannels;
 	$fields=str_getcsv($row,",",escape: "\\");
-	$channel=$fields[0];
-	$timestamp=$fields[2];
-    	$source=$fields[3];
-	$heard=$fields[4];
-	$level=$fields[5];
-	$name=$fields[8];
-	$lat=$fields[10];
-	$long=$fields[11];
-	$comment=chunk_split(strip_tags($fields[21]),60,"<BR>");
+	$channel=htmlspecialchars(strip_tags($fields[0]));
+	$timestamp=htmlspecialchars(strip_tags($fields[2]));
+    	$source=htmlspecialchars(strip_tags($fields[3]));
+	$heard=htmlspecialchars(strip_tags($fields[4]));
+	$level=htmlspecialchars(strip_tags($fields[5]));
+	$name=htmlspecialchars(strip_tags($fields[8]));
+	$lat=htmlspecialchars(strip_tags($fields[10]));
+	$long=htmlspecialchars(strip_tags($fields[11]));
+	$comment=chunk_split(htmlspecialchars(strip_tags($fields[21]),60,"<BR>"));
 
 	if ($fields[0]==$_SESSION['if'] or $displayallchannels==1) {
 		echo('<table class="normaltable traffic"><tr>');

@@ -15,7 +15,7 @@ if (isset($_GET['ajax'])) {
 	}
 
 	$readbytes=max((filesize($consolelog)-$maxreadbytes),$_SESSION['offsetfile']);
-        $data = stream_get_contents($handle, -1 , $readbytes);
+        $data = htmlspecialchars(strip_tags(stream_get_contents($handle, -1 , $readbytes)));
         if (filesize($consolelog) > $_SESSION['offsetfile'])  {
 		$_SESSION['offsetfile'] = filesize($consolelog);
 		if (substr($data,-1)=="\n") { $data=substr($data,0,-1); }
