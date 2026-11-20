@@ -90,7 +90,7 @@ function stationparse($frame) { //function for parsing station information
 		$frame=str_getcsv($frame,",",escape: "\\");
 		$utime = $frame[1];
 		if($utime > $time) { //if frame was received in time range
-			$stationcall = htmlspecialchars(strip_tags(strtoupper($frame[8])));
+			$stationcall = strtoupper($frame[8]);
 			if(array_key_exists($stationcall, $receivedstations)) { //if this callsign is already on stations list
 				$receivedstations[$stationcall][0]++; //increment the number of frames from this station
 			} else { //if this callsign is not on the list
@@ -234,12 +234,58 @@ function report_cputemp() { // reports windows/linux cpu temperature
 	if (str_contains(PHP_OS, 'WIN')) {
 		return (intval(shell_exec('powershell "@(Get-WMIObject -Query \"SELECT * FROM Win32_PerfFormattedData_Counters_ThermalZoneInformation\" -Namespace \"root/CIMV2\")[0].HighPrecisionTemperature"'))/10)-273;
 	} elseif (str_contains(PHP_OS, 'Linux')) {
-		if (file_exists ("/sys/class/thermal/thermal_zone0/temp")) {
-			exec("cat /sys/class/thermal/thermal_zone0/temp", $cputemp);
-			return $cputemp[0] / 1000;
-		} else {
-			return 'Cannot be detemined automatically';
-        }
+
+		// 1) lm-sensors con ruta absoluta (Alpine: /usr/bin/sensors, Debian: /usr/bin/sensors)
+		$sensorsBin = 'sensors';
+		foreach (['/usr/bin/sensors','/usr/sbin/sensors','/bin/sensors'] as $cand) {
+			if (is_executable($cand)) { $sensorsBin = $cand; break; }
+		}
+		$sensors = @shell_exec($sensorsBin.' 2>/dev/null');
+
+		if (!empty($sensors)) {
+			// Intel: Package id 0 (lo ideal si existe)
+			if (preg_match('/Package id 0:\s*\+?([0-9.]+)\s*°C/', $sensors, $m)) {
+				return (float)$m[1];
+			}
+			// AMD: Tctl / Tdie
+			if (preg_match('/\bTctl:\s*\+?([0-9.]+)\s*°C/', $sensors, $m)) {
+				return (float)$m[1];
+			}
+			if (preg_match('/\bTdie:\s*\+?([0-9.]+)\s*°C/', $sensors, $m)) {
+				return (float)$m[1];
+			}
+			// Intel sin "Package id": usar Core 0
+			if (preg_match('/Core 0:\s*\+?([0-9.]+)\s*°C/', $sensors, $m)) {
+				return (float)$m[1];
+			}
+			// Último recurso dentro de sensors: primera temp razonable (evita acpitz 0.0 y soc_dts)
+			if (preg_match_all('/:\s*\+?([0-9.]+)\s*°C/', $sensors, $mm)) {
+				foreach ($mm[1] as $v) {
+					$v = (float)$v;
+					if ($v > 1 && $v < 150) return $v;
+				}
+			}
+		}
+
+		// 2) Fallback sysfs: hwmon coretemp / k10temp (funciona aunque sensors no esté instalado)
+		foreach (glob('/sys/class/hwmon/hwmon*') as $hw) {
+			$name = @trim(@file_get_contents($hw.'/name'));
+			if ($name === 'coretemp' || $name === 'k10temp') {
+				$f = $hw.'/temp1_input';
+				if (is_file($f)) {
+					$v = (float)@file_get_contents($f) / 1000.0;
+					if ($v > 1) return $v;
+				}
+			}
+		}
+
+		// 3) Fallback Raspberry / thermal_zone con datos reales
+		if (file_exists('/sys/class/thermal/thermal_zone0/temp')) {
+			$t = (float)@file_get_contents('/sys/class/thermal/thermal_zone0/temp') / 1000.0;
+			if ($t > 1) return $t;
+		}
+
+		return 'Cannot be detemined automatically';
 	} else {
 		return "Operating System not supported";
 	}
@@ -249,12 +295,22 @@ function report_cpufreq() { // reports windows/linux cpu frequency
 	if (str_contains(PHP_OS, 'WIN')) {
 		return (explode("=",shell_exec("wmic cpu get currentclockspeed /value")))[1];
 	} elseif (str_contains(PHP_OS, 'Linux')) {
-		if (file_exists ("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq")) {
-			exec("cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq", $cpufreq);
-			return $cpufreq[0] / 1000;
-		} else {
-			return 'Cannot be detemined automatically';
+		// 1) intel_pstate / acpi-cpufreq por núcleo
+		if (file_exists("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq")) {
+			$v = (float)@file_get_contents("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq");
+			if ($v > 0) return $v / 1000;
 		}
+		// 2) intel_pstate expone cpuinfo_cur_freq a veces
+		if (file_exists("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_cur_freq")) {
+			$v = (float)@file_get_contents("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_cur_freq");
+			if ($v > 0) return $v / 1000;
+		}
+		// 3) Fallback: /proc/cpuinfo "cpu MHz"
+		$ci = @file_get_contents('/proc/cpuinfo');
+		if ($ci && preg_match('/cpu MHz\s*:\s*([0-9.]+)/', $ci, $m)) {
+			return (float)$m[1];
+		}
+		return 'Cannot be detemined automatically';
 	} else {
 		return "Operating System not supported";
 	}
@@ -277,11 +333,38 @@ function report_freemem() { // reports windows/linux free and total memory and f
 		$mem[2]=intval($mem[0]/$mem[1]*100);
 		return $mem;
 	} elseif (str_contains(PHP_OS, 'Linux')) {
-		$memoryinfo = str_getcsv(shell_exec('/usr/bin/free -m | grep "Mem:" | tr -s " "')," ", escape: "\\");
-		$mem[0]=$memoryinfo[2];
-		$mem[1]=$memoryinfo[1];
-		$mem[2]=intval($mem[0]/$mem[1]*100);
-		return $mem;
+		// Preferir /usr/bin/free; si no existe, parsear /proc/meminfo (Alpine busybox puede carecer de free)
+		$freeBin = null;
+		foreach (['/usr/bin/free','/bin/free','/usr/sbin/free'] as $cand) {
+			if (is_executable($cand)) { $freeBin = $cand; break; }
+		}
+		if ($freeBin !== null) {
+			$memoryinfo = str_getcsv(shell_exec($freeBin.' -m | grep "Mem:" | tr -s " "')," ", escape: "\\");
+			if (isset($memoryinfo[1], $memoryinfo[2]) && intval($memoryinfo[1]) > 0) {
+				$mem[0]=intval($memoryinfo[2]);
+				$mem[1]=intval($memoryinfo[1]);
+				$mem[2]=intval($mem[0]/$mem[1]*100);
+				return $mem;
+			}
+		}
+		// Fallback: /proc/meminfo (valores en kB)
+		$mi = @file_get_contents('/proc/meminfo');
+		if ($mi) {
+			$total = $avail = 0;
+			if (preg_match('/MemTotal:\s*(\d+)\s*kB/', $mi, $m)) $total = (int)$m[1];
+			if (preg_match('/MemAvailable:\s*(\d+)\s*kB/', $mi, $m)) {
+				$avail = (int)$m[1];
+			} elseif (preg_match('/MemFree:\s*(\d+)\s*kB/', $mi, $m)) {
+				$avail = (int)$m[1];
+			}
+			if ($total > 0) {
+				$mem[0]=intval($avail/1024); // MB "libres/disponibles"
+				$mem[1]=intval($total/1024); // MB totales
+				$mem[2]=intval($mem[0]/$mem[1]*100);
+				return $mem;
+			}
+		}
+		return "Cannot be detemined automatically";
 	} else {
 		return "Operating System not supported";
 	}
@@ -310,53 +393,54 @@ function report_aprsisserver(&$aprsisserverip) { // reports windows/linux aprs-i
 	}
 }
 
-function report_direwolfstatus() { // reports windows/linux direwolf running status
-	if (str_contains(PHP_OS, 'WIN')) {
-		if (str_contains(shell_exec('powershell "@(get-process direwolf)[0].ProcessName"'),"direwolf")) {
-			return '<span class="running">Running</span>';
-		} else {
-			return '<span class="notrunning">Not running</span>';
-		}
-	} elseif (str_contains(PHP_OS, 'Linux')) {
-		$direwolfsts = shell_exec('systemctl is-active direwolf');
-		if(str_starts_with($direwolfsts, "active")) {
-			return '<span class="running">Running</span>'; 
-		} else {
-			return '<span class="notrunning">Not running</span>';
-		}
-	} else {
-		return "Operating System not supported";
-	}
+function report_direwolfstatus() {
+    if (str_contains(PHP_OS, 'WIN')) {
+        if (str_contains(shell_exec('powershell "@(get-process direwolf)[0].ProcessName"'),"direwolf")) {
+            return '<span class="running">Running</span>';
+        } else {
+            return '<span class="notrunning">Not running</span>';
+        }
+    } elseif (str_contains(PHP_OS, 'Linux')) {
+        exec("pgrep -x direwolf", $output, $retval);
+        if ($retval === 0) {
+            return '<span class="running">Running</span>';
+        } else {
+            return '<span class="notrunning">Not running</span>';
+        }
+    } else {
+        return "Operating System not supported";
+    }
 }
 
-function report_clientips() { // reports windows/linux client ip addresses
-	$clientipshtml = NULL;
-	global $clientiplookuphost;
-	if (str_contains(PHP_OS, 'WIN')) {
-		$error=NULL;
-		$netstatout=NULL;
-		$i=0;
-		$clientips=NULL;
-		exec('netstat -n | findstr ":80.*:.*ESTABLISHED :443.*:.*ESTABLISHED"',$netstatout,$error); //elements of array are a netstat rows
-		if ($error==false) {
-			foreach ($netstatout as $netstatrow) {
-				$clientips[$i]=(explode(":",(explode(" ",preg_replace('/\s+/', ' ',trim($netstatrow))))[2]))[0];
-				$i++;
-			}
-			$clientips=array_unique($clientips); //delete duplicates
-			foreach ($clientips as $clientip) {
-				$clientipshtml.='<a href="'.$clientiplookuphost.$clientip.'" target="_new">'.$clientip."</a><br>";
-			}
-		} else {
-			$clientipshtml="Cannot be determined";
-		}
-		return $clientipshtml;
-	} elseif (str_contains(PHP_OS, 'Linux')) {
-		$clientips = array_unique(explode("\n",substr(shell_exec('/usr/bin/ss -t -a | grep ESTAB | tr -s " " | cut -f 2 -d ":" | grep http | cut -f 2 -d " "'),0,-1)));
-		$clientipshtml="";
-		foreach ($clientips as $clientip) { $clientipshtml.='<a href="'.$clientiplookuphost.$clientip.'" target="_new">'.$clientip."</a><br>"; }
-		return $clientipshtml;
-	} else {
-		return "Operating System not supported";
-	}
+function report_clientips() {
+    global $clientiplookuphost;
+
+    if (!str_contains(PHP_OS, 'Linux')) {
+        return "OS not supported";
+    }
+
+    // Comando mejorado para extraer IPs de clientes conectados a puertos 80, 443
+    $cmd = "netstat -tn | grep ':80 .*ESTABLISHED\\|:443 .*ESTABLISHED' | tr -s ' ' | cut -d ' ' -f5 | cut -d: -f1";
+    $output = shell_exec($cmd);
+    $ips = array_filter(array_map('trim', explode("\n", $output)));
+
+    $clientips = [];
+    foreach ($ips as $ip) {
+        if (filter_var($ip, FILTER_VALIDATE_IP) && !preg_match('/^(127\.0\.0\.1|::1|0\.0\.0\.0)$/', $ip)) {
+            $clientips[] = $ip;
+        }
+    }
+
+    $clientips = array_unique($clientips);
+
+    if (empty($clientips)) {
+        return "No active users";
+    }
+
+    $html = "";
+    foreach ($clientips as $ip) {
+        $html .= '<a href="' . htmlspecialchars($clientiplookuphost . $ip) . '" target="_new">' . htmlspecialchars($ip) . '</a><br>';
+    }
+
+    return $html;
 }
